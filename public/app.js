@@ -8,13 +8,13 @@ const sendBtn = document.getElementById("send-btn");
 const voiceBtn = document.getElementById("voice-btn");
 const msgTemplate = document.getElementById("msg-template");
 
-const appConfig = window.FIT_HUB_CONFIG || {};
-const API_BASE_URL =
-  typeof appConfig.apiBaseUrl === "string" ? appConfig.apiBaseUrl.replace(/\/+$/, "") : "";
-const IS_GITHUB_PAGES = window.location.hostname.endsWith("github.io");
-
 let profile = null;
 let history = [];
+const coachMemory = {
+  physiqueTarget: "",
+  askedPhysiqueTarget: false,
+  trainingMinutes: 60
+};
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
@@ -58,40 +58,152 @@ function speak(text) {
   window.speechSynthesis.speak(utter);
 }
 
-function buildApiUrl(pathname) {
-  return API_BASE_URL ? `${API_BASE_URL}${pathname}` : pathname;
+function normalizeText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function buildDemoReply(userText, userProfile) {
-  const days = Number(userProfile?.trainingDays) || 3;
-  const goal = userProfile?.goal || "ricomposizione corporea";
-  const equipment = userProfile?.equipment || "corpo libero";
-  const dietStyle = userProfile?.dietStyle || "onnivoro";
-  const kcalHint = Math.round((Number(userProfile?.weightKg) || 70) * 31);
+function detectPhysiqueTarget(text) {
+  const t = normalizeText(text);
+  if (
+    t.includes("magro") ||
+    t.includes("definito") ||
+    t.includes("asciutto") ||
+    t.includes("tirato")
+  ) {
+    return "definito e asciutto";
+  }
+
+  if (
+    t.includes("muscoloso") ||
+    t.includes("massa") ||
+    t.includes("grosso") ||
+    t.includes("voluminoso")
+  ) {
+    return "muscoloso e pieno";
+  }
+
+  if (
+    t.includes("atletico") ||
+    t.includes("ricompos") ||
+    t.includes("lean") ||
+    t.includes("fitness model")
+  ) {
+    return "atletico in ricomposizione";
+  }
+
+  return "";
+}
+
+function getCaloriesTarget(userProfile) {
+  const weight = Number(userProfile.weightKg) || 70;
+  const days = Number(userProfile.trainingDays) || 3;
+  const activityFactor = days >= 5 ? 1.55 : days >= 3 ? 1.45 : 1.35;
+  const bmrBase = 10 * weight + 6.25 * (Number(userProfile.heightCm) || 170) - 5 * (Number(userProfile.age) || 30);
+  const bmr = userProfile.sex === "Donna" ? bmrBase - 161 : bmrBase + 5;
+  const tdee = Math.round(bmr * activityFactor);
+
+  if (coachMemory.physiqueTarget.includes("definito")) return tdee - 250;
+  if (coachMemory.physiqueTarget.includes("muscoloso")) return tdee + 150;
+  return tdee - 100;
+}
+
+function workoutTemplate(userProfile) {
+  const days = Number(userProfile.trainingDays) || 3;
+  const equipment = userProfile.equipment || "Corpo libero";
+
+  if (days <= 3) {
+    return [
+      "- Giorno A: Spinta + core",
+      "- Giorno B: Trazione + catena posteriore",
+      "- Giorno C: Gambe + conditioning"
+    ].join("\n");
+  }
+
+  if (days === 4) {
+    return [
+      "- Giorno 1: Upper (forza)",
+      "- Giorno 2: Lower (forza)",
+      "- Giorno 3: Upper (ipertrofia)",
+      "- Giorno 4: Lower (ipertrofia + HIIT breve)"
+    ].join("\n");
+  }
 
   return [
-    "Modalita demo Pages attiva (senza backend AI).",
-    `Obiettivo letto: ${goal}.`,
-    `Allenamento consigliato: ${days} giorni/settimana con ${equipment}.`,
+    "- Giorno 1: Push",
+    "- Giorno 2: Pull",
+    "- Giorno 3: Legs",
+    "- Giorno 4: Upper tecnico",
+    "- Giorno 5: Lower + sprint brevi"
+  ].join("\n");
+}
+
+function mealIdeas(userProfile) {
+  const dietStyle = userProfile.dietStyle || "Onnivoro";
+  const allergies = userProfile.allergies || "nessuna";
+
+  return [
+    `Stile: ${dietStyle} | Attenzione a: ${allergies}.`,
+    "- Colazione: yogurt greco (o soia) + avena + frutti rossi + semi",
+    "- Pranzo: bowl con riso, proteine magre/legumi, verdure, olio EVO",
+    "- Cena: fonte proteica + patate/riso + verdure cotte + frutta",
+    "- Snack: frutto + frutta secca o shake proteico"
+  ].join("\n");
+}
+
+function buildCoachReply(userMessage, userProfile) {
+  const clean = normalizeText(userMessage);
+
+  if (!coachMemory.physiqueTarget) {
+    const detected = detectPhysiqueTarget(clean);
+    if (!detected) {
+      coachMemory.askedPhysiqueTarget = true;
+      return [
+        "Prima domanda fondamentale:",
+        "Che tipo di fisico vuoi raggiungere?",
+        "Puoi rispondere ad esempio: 'definito e asciutto', 'muscoloso e pieno' oppure 'atletico in ricomposizione'."
+      ].join("\n");
+    }
+
+    coachMemory.physiqueTarget = detected;
+    return [
+      `Perfetto, obiettivo registrato: ${coachMemory.physiqueTarget}.`,
+      "Ora posso personalizzare piano allenamento e ricette.",
+      "Dimmi se preferisci prima: allenamento, nutrizione o piano settimanale completo."
+    ].join("\n");
+  }
+
+  const wantsWorkout =
+    clean.includes("allen") || clean.includes("scheda") || clean.includes("workout") || clean.includes("eserciz");
+  const wantsFood =
+    clean.includes("ricett") || clean.includes("nutriz") || clean.includes("dieta") || clean.includes("pasto");
+  const wantsFullPlan = clean.includes("piano") || clean.includes("settimana") || clean.includes("completo");
+
+  const kcal = getCaloriesTarget(userProfile);
+  const proteins = Math.round((Number(userProfile.weightKg) || 70) * 2);
+
+  return [
+    `Obiettivo fisico: ${coachMemory.physiqueTarget}`,
+    `Calorie target iniziali: circa ${kcal} kcal`,
+    `Proteine giornaliere: circa ${proteins} g`,
     "",
-    "Piano base (4 settimane):",
-    "- Giorno A: spinta + core (4 esercizi, 3-4 serie, RPE 7-8)",
-    "- Giorno B: tirata + posterior chain",
-    "- Giorno C: gambe + conditioning",
-    days >= 4 ? "- Giorno D: full body tecnico + mobilita" : "- Extra: 2 camminate veloci da 30 minuti",
+    wantsWorkout || wantsFullPlan ? "Allenamento:" : "Allenamento (base):",
+    workoutTemplate(userProfile),
     "",
-    `Nutrizione (${dietStyle}): parti da circa ${kcalHint} kcal e regola ogni 2 settimane.`,
-    "- Proteine: 1.8-2.2 g/kg peso",
-    "- Grassi: 0.7-1.0 g/kg peso",
-    "- Carboidrati: calorie rimanenti, piu alti nei giorni di allenamento",
+    wantsFood || wantsFullPlan ? "Nutrizione e ricette:" : "Nutrizione (base):",
+    mealIdeas(userProfile),
     "",
-    "3 ricette rapide:",
-    "- Bowl proteica (riso, fonte proteica, verdure, olio EVO)",
-    "- Omelette alta proteina + pane integrale + frutta",
-    "- Yogurt greco/alternativa vegetale + avena + frutti rossi",
+    "Recupero:",
+    "- Sonno: 7.5-9 ore",
+    "- Passi: 8k-10k al giorno",
+    "- Progressione: aumenta gradualmente carichi o ripetizioni ogni 1-2 settimane",
     "",
-    `Richiesta ricevuta: \"${userText}\"`,
-    "Se vuoi la risposta AI reale su Pages, imposta un backend pubblico in config.js (apiBaseUrl)."
+    `Richiesta interpretata: \"${userMessage}\"`,
+    "Se vuoi, nel prossimo messaggio ti preparo un piano preciso giorno per giorno."
   ].join("\n");
 }
 
@@ -103,34 +215,11 @@ async function sendToCoach(text) {
   setChatEnabled(false);
 
   try {
-    if (IS_GITHUB_PAGES && !API_BASE_URL) {
-      const demoReply = buildDemoReply(text, profile || {});
-      addMessage("assistant", demoReply);
-      history.push({ role: "assistant", content: demoReply });
-      speak(demoReply.slice(0, 280));
-      coachState.textContent = "Coach demo attivo";
-      return;
-    }
-
-    const response = await fetch(buildApiUrl("/api/chat"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        profile,
-        message: text,
-        history
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Errore durante la richiesta");
-    }
-
-    addMessage("assistant", data.reply);
-    history.push({ role: "assistant", content: data.reply });
-    speak(data.reply.slice(0, 280));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const reply = buildCoachReply(text, profile || {});
+    addMessage("assistant", reply);
+    history.push({ role: "assistant", content: reply });
+    speak(reply.slice(0, 280));
     coachState.textContent = "Coach attivo";
   } catch (error) {
     addMessage("error", error.message);
@@ -166,16 +255,18 @@ profileForm.addEventListener("submit", (event) => {
     <small>Valori indicativi, non medici.</small>
   `;
 
-  coachState.textContent = IS_GITHUB_PAGES && !API_BASE_URL ? "Coach demo attivo" : "Coach attivo";
+  coachState.textContent = "Coach attivo";
   setChatEnabled(true);
 
   chatWindow.innerHTML = "";
   history = [];
+  coachMemory.physiqueTarget = "";
+  coachMemory.askedPhysiqueTarget = false;
 
   const welcome = [
     `Ciao ${profile.name || "campione"}, ottimo inizio.`,
-    "Sono pronto a costruire il tuo piano per diventare muscoloso e magro.",
-    "Scrivi ad esempio: 'Fammi un piano allenamento + ricette per 7 giorni'."
+    "Sono il tuo coach AI locale, creato dentro questa app (senza API chatbot esterne).",
+    "Prima domanda: che tipo di fisico vuoi raggiungere?"
   ].join(" ");
 
   addMessage("assistant", welcome);
@@ -214,7 +305,7 @@ if (recognition) {
 
   recognition.addEventListener("end", () => {
     if (profile) {
-      coachState.textContent = IS_GITHUB_PAGES && !API_BASE_URL ? "Coach demo attivo" : "Coach attivo";
+      coachState.textContent = "Coach attivo";
     }
   });
 }
@@ -222,7 +313,5 @@ if (recognition) {
 setChatEnabled(false);
 addMessage(
   "assistant",
-  IS_GITHUB_PAGES && !API_BASE_URL
-    ? "Compila il profilo: su GitHub Pages stai usando la modalita demo. Per AI reale, collega un backend in config.js."
-    : "Compila il profilo qui a sinistra. Appena pronto, iniziamo con un piano personalizzato serio."
+  "Compila il profilo qui a sinistra. Ti chiedero subito che fisico vuoi raggiungere e poi costruiremo il piano."
 );

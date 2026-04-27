@@ -2,19 +2,20 @@
 
 Web app fitness con coach AI in italiano: raccoglie i tuoi dati essenziali (peso, altezza, obiettivi, livello), poi ti propone consigli personalizzati per diventare piu muscoloso e piu magro con allenamenti, ricette e strategie di recupero.
 
+Il chatbot e creato direttamente dentro l'app (logica locale), senza API di chatbot esterne.
+
 ## Funzionalita principali
 
 - Onboarding fitness guidato con domande chiave
 - Metriche iniziali automatiche (BMI e BMR indicativi)
-- Chat AI personalizzata su profilo e obiettivo
-- Modalita demo automatica su GitHub Pages (se backend non configurato)
+- Chat AI locale personalizzata su profilo e obiettivo
+- Prima domanda obbligatoria: che tipo di fisico vuoi raggiungere
 - Supporto voce: parla al coach e ascolta la risposta
 - UI moderna, responsive e ottimizzata desktop/mobile
 
 ## Requisiti
 
 - Node.js 18+ (consigliato Node.js 20+)
-- Chiave API OpenAI
 
 ## Setup
 
@@ -24,27 +25,13 @@ Web app fitness con coach AI in italiano: raccoglie i tuoi dati essenziali (peso
 npm install
 ```
 
-2. Crea il file `.env` copiando `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-3. Inserisci la tua chiave in `.env`:
-
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
-PORT=3000
-```
-
-4. Avvia l'app:
+2. Avvia l'app:
 
 ```bash
 npm run dev
 ```
 
-5. Apri il browser su:
+3. Apri il browser su:
 
 ```text
 http://localhost:3000
@@ -64,18 +51,7 @@ Il repository include il workflow [deploy-pages.yml](.github/workflows/deploy-pa
 https://gcasaldi.github.io/fit-hub/
 ```
 
-### AI reale su Pages
-
-GitHub Pages ospita solo file statici, quindi l'endpoint Node `/api/chat` non gira su Pages.
-
-- Senza backend esterno: l'app funziona in modalita demo.
-- Con backend esterno: imposta `apiBaseUrl` in [public/config.js](public/config.js), ad esempio:
-
-```js
-window.FIT_HUB_CONFIG = {
-	apiBaseUrl: "https://tuo-backend-pubblico.com"
-};
-```
+Su GitHub Pages l'app funziona normalmente, perche la logica del chatbot e locale nel browser.
 
 ## Come usarla
 
@@ -88,11 +64,10 @@ window.FIT_HUB_CONFIG = {
 
 ## Struttura progetto
 
-- `server.js`: backend Express + endpoint `/api/chat`
+- `server.js`: server Express per hosting statico
 - `public/index.html`: layout principale
 - `public/styles.css`: stile visuale e responsive design
-- `public/app.js`: logica onboarding, chat, voce
-- `public/config.js`: configurazione client (`apiBaseUrl`)
+- `public/app.js`: logica onboarding, chatbot locale, chat, voce
 - `.github/workflows/deploy-pages.yml`: deploy automatico su GitHub Pages
 
 ## Note importanti

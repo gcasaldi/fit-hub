@@ -1,1 +1,101 @@
-# fit-hub
+# Fit Hub AI Coach
+
+Web app fitness con coach AI in italiano: raccoglie i tuoi dati essenziali (peso, altezza, obiettivi, livello), poi ti propone consigli personalizzati per diventare piu muscoloso e piu magro con allenamenti, ricette e strategie di recupero.
+
+## Funzionalita principali
+
+- Onboarding fitness guidato con domande chiave
+- Metriche iniziali automatiche (BMI e BMR indicativi)
+- Chat AI personalizzata su profilo e obiettivo
+- Modalita demo automatica su GitHub Pages (se backend non configurato)
+- Supporto voce: parla al coach e ascolta la risposta
+- UI moderna, responsive e ottimizzata desktop/mobile
+
+## Requisiti
+
+- Node.js 18+ (consigliato Node.js 20+)
+- Chiave API OpenAI
+
+## Setup
+
+1. Installa dipendenze:
+
+```bash
+npm install
+```
+
+2. Crea il file `.env` copiando `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+3. Inserisci la tua chiave in `.env`:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
+PORT=3000
+```
+
+4. Avvia l'app:
+
+```bash
+npm run dev
+```
+
+5. Apri il browser su:
+
+```text
+http://localhost:3000
+```
+
+## Deploy su GitHub Pages
+
+Il repository include il workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) che pubblica automaticamente la cartella [public](public) ad ogni push su `main`.
+
+1. Vai su `Settings > Pages` del repository.
+2. In `Build and deployment`, seleziona `Source: GitHub Actions`.
+3. Fai push su `main`.
+4. Attendi il completamento del workflow `Deploy GitHub Pages`.
+5. Apri l'URL Pages del repo:
+
+```text
+https://gcasaldi.github.io/fit-hub/
+```
+
+### AI reale su Pages
+
+GitHub Pages ospita solo file statici, quindi l'endpoint Node `/api/chat` non gira su Pages.
+
+- Senza backend esterno: l'app funziona in modalita demo.
+- Con backend esterno: imposta `apiBaseUrl` in [public/config.js](public/config.js), ad esempio:
+
+```js
+window.FIT_HUB_CONFIG = {
+	apiBaseUrl: "https://tuo-backend-pubblico.com"
+};
+```
+
+## Come usarla
+
+1. Compila il profilo fitness con dati reali.
+2. Clicca su `Attiva Coach`.
+3. Chiedi al coach un piano pratico, per esempio:
+	- "Fammi un piano allenamento + ricette per 7 giorni"
+	- "Adatta il piano a 3 giorni a settimana"
+	- "Dammi 5 colazioni ad alta proteina"
+
+## Struttura progetto
+
+- `server.js`: backend Express + endpoint `/api/chat`
+- `public/index.html`: layout principale
+- `public/styles.css`: stile visuale e responsive design
+- `public/app.js`: logica onboarding, chat, voce
+- `public/config.js`: configurazione client (`apiBaseUrl`)
+- `.github/workflows/deploy-pages.yml`: deploy automatico su GitHub Pages
+
+## Note importanti
+
+- Questa app fornisce supporto educativo e motivazionale, non sostituisce il parere medico.
+- Per condizioni cliniche o infortuni, confrontati con professionisti qualificati.

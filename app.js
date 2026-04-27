@@ -470,20 +470,6 @@ function buildCoachReply(userMessage, userProfile) {
 
   return full;
 }
-    workoutTemplate(userProfile),
-    "",
-    wantsFood || wantsFullPlan ? "Nutrizione e ricette:" : "Nutrizione (base):",
-    mealIdeas(userProfile),
-    "",
-    "Recupero:",
-    "- Sonno: 7.5-9 ore",
-    "- Passi: 8k-10k al giorno",
-    "- Progressione: aumenta gradualmente carichi o ripetizioni ogni 1-2 settimane",
-    "",
-    `Richiesta interpretata: \"${userMessage}\"`,
-    "Se vuoi, nel prossimo messaggio ti preparo un piano preciso giorno per giorno."
-  ].join("\n");
-}
 
 async function sendToCoach(text) {
   addMessage("user", text);

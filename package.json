@@ -5,6 +5,7 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
+    "sync:pages-root": "bash scripts/sync-pages-root.sh",
     "dev": "node server.js",
     "start": "node server.js"
   },

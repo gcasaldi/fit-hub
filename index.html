@@ -25,6 +25,21 @@
           Rispondi a poche domande essenziali e ricevi consigli personalizzati su allenamento,
           ricette e recupero. Puoi anche parlare con la tua voce.
         </p>
+
+        <div class="auth-shell">
+          <div>
+            <p class="auth-title">Accesso personale</p>
+            <p class="auth-subtitle">Crea un account e il coach ricordera dati, obiettivi e storico.</p>
+          </div>
+          <form id="auth-form" class="auth-form">
+            <input id="auth-username" type="text" placeholder="Username" required />
+            <input id="auth-password" type="password" placeholder="Password" required />
+            <button class="btn-secondary" type="button" id="register-btn">Registrati</button>
+            <button class="btn-primary" type="submit" id="login-btn">Accedi</button>
+            <button class="btn-secondary" type="button" id="logout-btn" disabled>Logout</button>
+          </form>
+          <p id="auth-status" class="auth-status">Non autenticato</p>
+        </div>
       </section>
 
       <section class="panel-grid">

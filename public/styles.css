@@ -115,6 +115,39 @@ h2 {
   color: var(--muted);
 }
 
+.auth-shell {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-title {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffd3a2;
+}
+
+.auth-subtitle {
+  margin: 3px 0 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.auth-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto;
+  gap: 8px;
+}
+
+.auth-status {
+  margin: 8px 0 0;
+  font-size: 0.83rem;
+  color: var(--muted);
+}
+
 .panel-grid {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -301,6 +334,10 @@ button:disabled {
   }
 
   .chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-form {
     grid-template-columns: 1fr;
   }
 }
